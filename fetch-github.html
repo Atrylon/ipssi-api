@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <div>
+        <input type="text" placeholder="Organisation:" name="orga" id="orga-input">
+        <ul id="member-list"></ul>
+    </div>
+    <div style="position: absolute; border: 1px solid black; left: 200px; right: 25px; top: 25px;">
+        <img id="avatar" style="float: left; width: 100px;" src="https://avatars1.githubusercontent.com/u/937312?v=4"/>
+        <h1 id="pseudo" style="margin: 15px 0;">alborq</h1>
+        <span id="bio">Je suis une bio ......</span>
+
+        <table style="border: 1px solid black; margin-top: 25px; width: 100%;">
+            <thead>
+                <tr>
+                    <th>Pseudo</th>
+                    <th>Repository</th>
+                    <th>Description</th>
+                    <th>Star</th>
+                </tr>
+            </thead>
+            <tbody id="top">
+
+            </tbody>
+        </table>
+    </div>
+</head>
+<body>
+</body>
+<script>
+    const memberList = document.getElementById('member-list');
+    const orgaInput = document.getElementById('orga-input');
+    const topTable = document.getElementById('top');
+
+    orgaInput.addEventListener('change', (event) => {
+      const targetOrga = event.target.value;
+
+      fetch('https://api.github.com/orgs/' + targetOrga + '/members')
+        .then(function(response) {
+          return response.json();
+        })
+        .then(updateMemberList)
+    });
+
+    function updateMemberList(members) {
+      while( memberList.firstChild ){
+        memberList.removeChild( memberList.firstChild );
+      }
+      for (const member of members) {
+        console.log(member);
+        const li = document.createElement('li');
+        li.appendChild(document.createTextNode(member.login));
+        li.addEventListener('click', updateMember);
+
+        memberList.appendChild(li);
+      }
+    }
+
+    function updateMember(event) {
+      const pseudo = event.target.innerText;
+
+      fetch('https://api.github.com/users/' + pseudo)
+        .then(function(response) {
+          return response.json();
+        })
+        .then((member) => {
+          document.getElementById('pseudo').innerText = member.login;
+          document.getElementById('bio').innerText = member.bio;
+          document.getElementById('avatar').src = member.avatar_url;
+        });
+
+      fetch('https://api.github.com/users/'+ pseudo +'/starred')
+        .then(function(response) {
+          return response.json();
+        })
+        .then((repositories) => {
+          return repositories.sort((a, b) => {
+            if (a.forks_count === b.forks_count) {
+              return 0;
+            }
+
+            return b.forks_count - a.forks_count;
+          }).slice(0, 5);
+        })
+
+        .then((repositories) => {
+          topTable.innerHTML = '';
+          for (const repository of repositories) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${repository.owner.login}</td>
+                <td>${repository.name}</td>
+                <td>${repository.description}</td>
+                <td>${repository.stargazers_count}</td>`;
+            topTable.append(row);
+          }
+
+        });
+    }
+</script>
+</html>

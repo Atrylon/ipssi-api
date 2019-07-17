@@ -1,0 +1,15 @@
+version: "3.6"
+
+services:
+    app:
+        volumes:
+            - "~/.composer:/home/app/.composer"
+            - "./var/.bash_history:/home/app/.bash_history"
+
+    nginx:
+        ports:
+            - "80:80"
+
+    db:
+        ports:
+            - "3306:3306"

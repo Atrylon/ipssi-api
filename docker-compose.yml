@@ -1,0 +1,28 @@
+version: "3.6"
+
+services:
+  nginx:
+    image: easybar/nginx:dev
+    depends_on:
+    - app
+    environment:
+    - DOCROOT=/srv/public
+    volumes:
+    - .:/srv
+
+  app:
+    image: easybar/php:7.2.9-dev
+    depends_on:
+    - db
+    volumes:
+    - .:/srv
+
+  db:
+    image: mariadb:10.2.10
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+    - db-data:/var/lib/mysql
+
+volumes:
+  db-data: {}
