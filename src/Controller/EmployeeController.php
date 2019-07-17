@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Exception\ValidationException;
+use App\Models\Employee;
 use App\Repository\EmployeeRepository;
 use App\Utils\PaginationInformation;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController as AbstractControllerAlias;
@@ -14,7 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class Employee extends AbstractControllerAlias
+class EmployeeController extends AbstractControllerAlias
 {
     /**
      * @Route(path="/employee", methods={"GET"})
@@ -42,31 +43,35 @@ class Employee extends AbstractControllerAlias
     /**
      * @Route(path="/employee", methods={"POST"})
      */
-    public function addEmployee(
+    public function create(
         Request $request,
         Serializer $serializer,
         ValidatorInterface $validator,
         EmployeeRepository $employeeRepository
     ) {
+        $employee = $serializer->deserialize(
+            $request->getContent(),
+            Employee::class,
+            "json"
+        );
 
-//        dd($request->getContent());
-        if ($content = $request->getContent()) {
-            $parametersAsArray = json_decode($content, true);
+        if (\count($violations = $validator->validate($employee)) !== 0) {
+            throw new ValidationException($violations);
         }
 
-        $employee = [
-            "firstName"=>$parametersAsArray["firstName"],
-            "lastName"=>$parametersAsArray["lastName"],
-            "gender"=>$parametersAsArray["gender"],
-            "birthDate"=>$parametersAsArray["birthDate"]
-        ];
-        $department = $parametersAsArray["department"];
-        $salary = $parametersAsArray["actualSalary"];
+        $employeeRepository->save($employee);
 
-        $post = $employeeRepository->postEmployee($employee, $department, $salary);
+        return new JsonResponse($serializer->normalize($employee));
+    }
 
-        dd($post);
+    /**
+     * @Route(path="/employee/{id}", methods={"DELETE"})
+     */
+    public function delete(int $id, EmployeeRepository $employeeRepository) {
 
-        dd(gettype($employee), $department, $salary);
+        $employee = $employeeRepository->findById($id);
+        $employeeRepository->delete($employee);
+
+        return new JsonResponse('', 204);
     }
 }
